@@ -48,13 +48,47 @@ class Handler extends ExceptionHandler
     {
         if ($exception instanceof ValidationException) {
             return $this->convertValidationExceptionToResponse($exception, $request);
-        }
+        } //fin if-validationException 
 
         if ($exception instanceof ModelNotFoundException) {
             $modelo = strtolower(class_basename($exception->getModel()));
             return $this->errorResponse("No existe ninguna instancia de {$modelo} con el id especificado",404); 
-        }
-        return parent::render($request, $exception);
+        }//fin de if-ModelNotFound 
+
+        if ($exception instanceof AuthenticationException) {
+            return $this->unauthenticated($request,$exception);
+        }//fin de if-authenticationException     
+
+        if ($exception instanceof AuthorizationException) {
+            return $this->errorResponse('No posee permisos para ejecutar esta accion', 403);
+        }//fin de if-authorizationException 
+
+        if ($exception instanceof NotFoundHttpException) {
+            return $this->errorResponse('No se encontro la URL especificada', 404);
+        }//fin de if-notfoundHttpException            
+
+        if ($exception instanceof MethodNotAllowedHttpException) {
+            return $this->errorResponse('El metodo especificado en la peticion no es valido', 405);
+        }//fin de if-method...Exception
+
+        if ($exception instanceof HttpException) {
+            return $this->errorResponse($exception->getMessage(), $exception->getStatusaCode());
+        }//fin de if-HttpException 
+
+        if ($exception instanceof QueryException) {
+            $codigo = $exception->errorInfo[1];
+
+            if($codigo == 1451){
+                return $this->errorResponse('No se puede eliminar de forma permanente el recurso porque esta relacionado con algun otro', 409);
+            }
+
+        }//fin de if-QueryException         
+
+        if(config('app.debug')){
+            return parent::render($request, $exception);
+        }//fin de if-config
+        
+        return $this->errorResponse('falla inesperada, intenta luego', 500);
     }
 
     /**
@@ -67,10 +101,8 @@ class Handler extends ExceptionHandler
     protected function unauthenticated($request, AuthenticationException $exception)
     {
         if ($request->expectsJson()) {
-            return response()->json(['error' => 'Unauthenticated.'], 401);
+            return $this->errorResponse('No autenticado.', 401);
         }
-
-        return redirect()->guest(route('login'));
     }
 
     /**
@@ -80,7 +112,7 @@ class Handler extends ExceptionHandler
      * @param  \Illuminate\Http\Request  $request
      * @return \Symfony\Component\HttpFoundation\Response
      */
-    protected function convertValidationExceptionToResponse(ValidationException $e, $request)
+    protected function converttValidationExceptionToResponse(ValidationException $e, $request)
     {
         $errors = $e->validator->errors()->getMessages();
         return $this->errorResponse($errors, 422);
