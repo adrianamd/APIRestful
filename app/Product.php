@@ -25,6 +25,11 @@ class Product extends Model
        'seller_id',
     ];
 
+    /*ocultar la tabla pivot al hacer la consulta en postman*/
+    protected $hidden = [   
+        'pivot'
+    ];
+
     public function estaDisponible(){
        return $this -> status == Product::PRODUCTO_DISPONIBLE;
     }

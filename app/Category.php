@@ -16,6 +16,11 @@ class Category extends Model
         'description',
     ];
 
+    /*ocultar la tabla pivot al hacer la consulta en postman*/
+    protected $hidden = [   
+        'pivot'
+    ];
+
 /* belongsToMany hace referencia de muchos a muchos en BD*/
     public function products(){ 
         return $this -> belongsToMany(Product::class);
