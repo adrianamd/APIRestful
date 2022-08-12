@@ -5,6 +5,7 @@ namespace App\Http\Controllers\Seller;
 use App\Seller;
 use Illuminate\Http\Request;
 use App\Http\Controllers\ApiController;
+use Symfony\Component\HttpKernel\Exception\HttpException; 
 
 class SellerProductController extends ApiController
 {
@@ -47,9 +48,38 @@ class SellerProductController extends ApiController
         return $this->showOne($product,201);
     }
 
-    public function update(Request $request, Seller $seller)
+    public function update(Request $request, Seller $seller, Product $product)
     {
-        //
+        $rules = [
+            'quantity' => 'integer|min:1',
+            'status' => 'in: '. Product::PRODUCTO_DISPONIBLE . ','. Product::PRODUCTO_NO_DISPONIBLE,
+            'image' => 'image',
+        ];
+
+        $this->validate($request, $rules);
+
+        $this->verificarVendedor($seller, $product);        
+
+        $product ->fill($request->intersect([
+            'name',
+            'description',
+            'quantity'
+        ]));
+
+        if($request->has('status')){
+            $product->status = $request->status;
+            if ($product->estaDisponible() && $product->categories()->count()==0) {
+                return $this->errorResponse('Un producto activo debe tener al menos una categoria',409);
+            }
+        }
+
+        if ($product->isclean()) {
+            return $this->errorResponse('Se debe especificar al menos un valor diferente para actualizar', 422);
+        }
+
+        $product->save();
+
+        return $this->showOne($product);
     }
 
     /**
@@ -58,8 +88,16 @@ class SellerProductController extends ApiController
      * @param  \App\Seller  $seller
      * @return \Illuminate\Http\Response
      */
-    public function destroy(Seller $seller)
+    public function destroy(Seller $seller, Product $product)
     {
-        //
+        $this->verificarVendedor($seller, $product);
+        $product->delete();
+        return $this->showOne($product);
+    }
+
+    protected function verificarVendedor(){
+        if($seller->id != $product->seller_id){
+            throw new HttpException(422, 'El vendedor especificado no es el vendedor real del producto');
+        }
     }
 }
