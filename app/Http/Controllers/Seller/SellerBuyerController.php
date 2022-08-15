@@ -25,7 +25,6 @@ class SellerBuyerController extends ApiController
             ->unique() /*para que no se repitan los compradores*/
             ->values(); /*reorganiza los indices en orden correcto*/
 
-
         return $this->showAll($buyers); //para que muestre todos 
     }
 }
