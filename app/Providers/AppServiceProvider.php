@@ -2,7 +2,10 @@
 
 namespace App\Providers;
 
+use App\User;
 use App\Product;
+use App\Mail\UserCreated;
+use Illuminate\Support\Facades\Mail;
 use Illuminate\Support\Facades\Schema;
 use Illuminate\Support\ServiceProvider;
 
@@ -16,6 +19,11 @@ class AppServiceProvider extends ServiceProvider
     public function boot()
     {
         Schema::defaultStringLength(191);
+
+        /*agregar un email de algún usuario*/
+        User::created(function($user){
+            Mail::to($user)->send(new UserCreated($user));
+        });
 
         /*cuando se actualice el producto se hace un llamado*/
         Product::updated(function($product){
